@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { calculateMatch } from "@/lib/matching";
 import { buildOrganizationCandidateInsights } from "@/lib/match-insights";
 import type { Opportunity, StudentProfile } from "@/lib/types";
@@ -11,6 +11,16 @@ export interface TalentBriefCandidate {
   opportunity: Opportunity;
   score: number;
   interested: boolean;
+}
+
+interface WeeklyGmailStatus {
+  configured: boolean;
+  recipient: string;
+  sender: string;
+  employerName: string;
+  schedule: string;
+  dataMode: string;
+  missingCount: number;
 }
 
 export function WeeklyTalentBrief({
@@ -26,6 +36,30 @@ export function WeeklyTalentBrief({
   const [draft, setDraft] = useState("");
   const [recipient, setRecipient] = useState(organizationEmail);
   const [notice, setNotice] = useState("");
+  const [gmailStatus, setGmailStatus] =
+    useState<WeeklyGmailStatus | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    fetch("/api/gmail/weekly/status", {
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Status unavailable.");
+        return (await response.json()) as WeeklyGmailStatus;
+      })
+      .then((status) => {
+        if (active) setGmailStatus(status);
+      })
+      .catch(() => {
+        if (active) setGmailStatus(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const generateBrief = () => {
     if (!topCandidates.length) {
@@ -75,7 +109,7 @@ export function WeeklyTalentBrief({
         ...candidateSections,
         "These are explainable recommendations, not hiring decisions. Review each privacy-safe profile before requesting a controlled introduction.",
         "",
-        "Nothing has been sent automatically.",
+        "This editable browser preview has not been sent. The separate server-side pilot sends its own scheduled demo brief.",
         "",
         "Jazakum Allahu khayran,",
         "MYIN",
@@ -113,7 +147,7 @@ export function WeeklyTalentBrief({
       `&body=${encodeURIComponent(body)}`;
 
     setNotice(
-      "Your email app was opened. MYIN has not scheduled or sent anything.",
+      "Your email app was opened. This browser draft was not sent automatically.",
     );
   };
 
@@ -192,6 +226,54 @@ export function WeeklyTalentBrief({
         </div>
       </div>
 
+      <section className="panel-card">
+        <div className="panel-heading">
+          <div>
+            <span className="kicker">Email-only pilot employer</span>
+            <h2>
+              {gmailStatus?.configured
+                ? "Automatic weekly Gmail delivery is configured."
+                : "Weekly Gmail delivery is not configured here yet."}
+            </h2>
+          </div>
+
+          <span
+            className={
+              gmailStatus?.configured
+                ? "confidence-pill high"
+                : "confidence-pill medium"
+            }
+          >
+            {gmailStatus?.configured ? "Pilot active" : "Setup pending"}
+          </span>
+        </div>
+
+        {gmailStatus?.configured ? (
+          <>
+            <p>
+              MYIN is configured to send a server-generated weekly talent and
+              opportunity-intelligence brief from {gmailStatus.sender} to{" "}
+              {gmailStatus.recipient}.
+            </p>
+            <div className="chip-row">
+              <span className="feature-chip">{gmailStatus.schedule}</span>
+              <span className="feature-chip">{gmailStatus.dataMode}</span>
+            </div>
+            <p className="microcopy">
+              The pilot uses one central MYIN Gmail sender. Employers only
+              receive the email; they do not need to connect Gmail. Website
+              communication remains inside MYIN.
+            </p>
+          </>
+        ) : (
+          <p className="muted">
+            The existing Open in email app and Copy brief options still work.
+            Server credentials must be added before automatic delivery becomes
+            active.
+          </p>
+        )}
+      </section>
+
       {draft && (
         <section className="panel-card form-stack">
           <div>
@@ -216,8 +298,9 @@ export function WeeklyTalentBrief({
           />
 
           <div className="notice">
-            This is an editable draft. MYIN does not schedule, send, or reveal
-            student contact information.
+            This editable browser draft does not send automatically. The
+            separate pilot schedule uses a protected server endpoint and the
+            fixed test-employer address.
           </div>
 
           <div className="card-actions">
