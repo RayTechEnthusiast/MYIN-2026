@@ -102,7 +102,9 @@ export function StudentApp() {
   const [selected, setSelected] = useState<Opportunity | null>(null);
   const [emailOpportunity, setEmailOpportunity] = useState<Opportunity | null>(null);
   const [emailDraft, setEmailDraft] = useState("");
-  const [emailStatus, setEmailStatus] = useState<"draft" | "approval" | "copied">("draft");
+  const [emailRecipient, setEmailRecipient] = useState("");
+  const [emailNotice, setEmailNotice] = useState("");
+  const [emailStatus, setEmailStatus] = useState<"draft" | "approval" | "copied" | "opened">("draft");
   const [profileDraft, setProfileDraft] = useState<StudentProfile | null>(currentStudent);
   const [profileNotice, setProfileNotice] = useState("");
   const [enrichment, setEnrichment] = useState<Record<string, string[]> | null>(null);
@@ -170,10 +172,61 @@ export function StudentApp() {
       : { title: "Act on your strongest connection", text: `${top?.opportunity.title || "Your top opportunity"} is currently your best fit.`, action: "View best match" };
 
   const openEmail = (opportunity: Opportunity) => {
-    const relevant = opportunity.skills.filter((skill) => student.skills.map((item) => item.toLowerCase()).includes(skill.toLowerCase()));
+    const relevant = opportunity.skills.filter((skill) =>
+      student.skills
+        .map((item) => item.toLowerCase())
+        .includes(skill.toLowerCase()),
+    );
+    const organization = state.organizations.find(
+      (item) => item.id === opportunity.orgId,
+    );
+
     setEmailOpportunity(opportunity);
-    setEmailDraft(`Subject: Interest in ${opportunity.title}\n\nAssalamu alaikum ${opportunity.orgName} team,\n\nI’m interested in the ${opportunity.title} opportunity. My experience with ${relevant.join(", ") || "related community work"}, along with my interest in ${student.interests.slice(0, 2).join(" and ")}, makes me excited to contribute. My current availability includes ${student.availableDays.join(", ") || "flexible times"}.\n\nI would appreciate the chance to learn more through MYIN’s controlled introduction process.\n\nJazakum Allahu khayran,\n${student.name}`);
+    setEmailRecipient(organization?.email || "");
+    setEmailNotice("");
+    setEmailDraft(
+      `Subject: Interest in ${opportunity.title}\n\n` +
+        `Assalamu alaikum ${opportunity.orgName} team,\n\n` +
+        `I’m interested in the ${opportunity.title} opportunity. ` +
+        `My experience with ${relevant.join(", ") || "related community work"}, ` +
+        `along with my interest in ${student.interests.slice(0, 2).join(" and ")}, ` +
+        `makes me excited to contribute. My current availability includes ` +
+        `${student.availableDays.join(", ") || "flexible times"}.\n\n` +
+        `I would appreciate the chance to learn more through MYIN’s controlled introduction process.\n\n` +
+        `Jazakum Allahu khayran,\n${student.name}`,
+    );
     setEmailStatus("draft");
+  };
+
+  const openInEmailApp = () => {
+    const recipient = emailRecipient.trim();
+
+    if (!recipient) {
+      setEmailNotice(
+        "Add the organization’s email address before opening the draft.",
+      );
+      return;
+    }
+
+    const lines = emailDraft.split("\n");
+    const subjectMatch = lines[0]?.match(/^Subject:\s*(.*)$/i);
+    const subject =
+      subjectMatch?.[1]?.trim() ||
+      `Interest in ${emailOpportunity?.title || "MYIN opportunity"}`;
+    const body = subjectMatch
+      ? lines.slice(1).join("\n").trimStart()
+      : emailDraft;
+
+    const mailtoUrl =
+      `mailto:${encodeURIComponent(recipient)}` +
+      `?subject=${encodeURIComponent(subject)}` +
+      `&body=${encodeURIComponent(body)}`;
+
+    setEmailStatus("opened");
+    setEmailNotice(
+      "Your email app was opened with this draft. MYIN has not sent anything.",
+    );
+    window.location.href = mailtoUrl;
   };
 
   const polishEmail = async () => {
@@ -354,11 +407,92 @@ export function StudentApp() {
       )}
 
       <Modal open={Boolean(selected)} onClose={() => setSelected(null)} title={selected?.title || "Opportunity"} wide>{selected && <DetailPanel opportunity={selected} student={student} />}</Modal>
-      <Modal open={Boolean(emailOpportunity)} onClose={() => setEmailOpportunity(null)} title={`Email draft — ${emailOpportunity?.title || "Opportunity"}`} wide>
-        <div className="email-state-row"><span className={emailStatus === "draft" ? "active" : ""}>Draft</span><span className={emailStatus === "approval" ? "active" : ""}>Requires approval</span><span className={emailStatus === "copied" ? "active" : ""}>Copied</span></div>
-        <textarea className="email-editor" value={emailDraft} onChange={(e) => { setEmailDraft(e.target.value); setEmailStatus("approval"); }} />
-        <div className="card-actions"><button className="button" onClick={polishEmail} disabled={busy}>{busy ? "Polishing…" : "Polish wording with Gemini"}</button><button className="button secondary" onClick={async () => { await navigator.clipboard.writeText(emailDraft); setEmailStatus("copied"); }}>Copy approved draft</button></div>
-        <p className="microcopy">No Gmail connection is included. MYIN prepares a draft and clearly distinguishes draft, approval, and copied states.</p>
+      <Modal
+        open={Boolean(emailOpportunity)}
+        onClose={() => setEmailOpportunity(null)}
+        title={`Email draft — ${emailOpportunity?.title || "Opportunity"}`}
+        wide
+      >
+        <div className="email-state-row">
+          <span className={emailStatus === "draft" ? "active" : ""}>
+            Draft
+          </span>
+          <span className={emailStatus === "approval" ? "active" : ""}>
+            Requires approval
+          </span>
+          <span className={emailStatus === "opened" ? "active" : ""}>
+            Opened in email app
+          </span>
+          <span className={emailStatus === "copied" ? "active" : ""}>
+            Copied
+          </span>
+        </div>
+
+        <label>
+          Organization email
+          <input
+            type="email"
+            value={emailRecipient}
+            onChange={(event) => {
+              setEmailRecipient(event.target.value);
+              setEmailStatus("approval");
+              setEmailNotice("");
+            }}
+            placeholder="organization@example.org"
+          />
+        </label>
+
+        <textarea
+          className="email-editor"
+          value={emailDraft}
+          onChange={(event) => {
+            setEmailDraft(event.target.value);
+            setEmailStatus("approval");
+            setEmailNotice("");
+          }}
+        />
+
+        <div className="notice">
+          Nothing is sent automatically. Review the draft, then open it in your
+          own email app and press Send yourself.
+        </div>
+
+        {emailNotice && <div className="notice warning">{emailNotice}</div>}
+
+        <div className="card-actions">
+          <button
+            className="button secondary"
+            onClick={polishEmail}
+            disabled={busy}
+          >
+            {busy ? "Polishing…" : "Polish wording with Gemini"}
+          </button>
+
+          <button
+            className="button"
+            onClick={openInEmailApp}
+            disabled={!emailRecipient.trim()}
+          >
+            Open in email app
+          </button>
+
+          <button
+            className="button ghost"
+            onClick={async () => {
+              await navigator.clipboard.writeText(emailDraft);
+              setEmailStatus("copied");
+              setEmailNotice("Draft copied. MYIN has not sent anything.");
+            }}
+          >
+            Copy draft
+          </button>
+        </div>
+
+        <p className="microcopy">
+          This hackathon demo uses a consent-first mailto handoff instead of
+          Gmail OAuth. MYIN never stores Gmail credentials or sends without
+          approval.
+        </p>
       </Modal>
     </AppShell>
   );
