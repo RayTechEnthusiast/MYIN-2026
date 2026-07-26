@@ -294,12 +294,30 @@ External services
 - **UI:** React 19
 - **Language:** TypeScript
 - **Validation:** Zod
-- **AI:** Google Gemini API
-- **Email:** Gmail API with OAuth 2.0 refresh-token flow
+- **AI integration:** Google Gemini API
+- **Email integration:** Gmail API with OAuth 2.0 refresh-token flow
 - **Scheduling:** GitHub Actions
 - **Hosting:** Render
 - **Testing:** Node test runner through `tsx`
 - **License:** MIT
+
+### APIs used
+
+- **Google Gemini API:** powers server-side assistance for profile enrichment, opportunity extraction, professional wording, contextual summaries, and controlled organization research.
+- **Gmail API:** sends the real email-only pilot confirmation and the privacy-safe weekly employer Talent Brief through an OAuth-authorized Gmail account.
+- **GitHub Actions:** securely triggers the protected weekly-send endpoint on a recurring schedule.
+- **Render:** hosts the deployed Next.js application and its server-side API routes.
+
+### AI-assisted development tools
+
+The team also used the following AI tools to assist with planning, coding, debugging, reviewing, and refining the prototype:
+
+- **Gemini**
+- **OpenAI Codex**
+- **ChatGPT Plus**
+- **Claude**
+
+These tools supported development, but the team remained responsible for product decisions, architecture, implementation choices, testing, security configuration, ethical safeguards, and the final submitted code. AI-generated suggestions were reviewed, edited, integrated, and tested by the team rather than accepted as automatic or authoritative output.
 
 ---
 
@@ -532,7 +550,7 @@ MYIN was inspired by the belief that community talent should not depend entirely
 - Creating a transparent score that stays understandable to students and judges
 - Protecting youth privacy while still showing organizations useful talent signals
 - Demonstrating community analytics without exposing small-group identities
-- Integrating Gmail OAuth and scheduled delivery within a hackathon timeframe
+- Integrating the Gmail API, OAuth, the Gemini API, and scheduled delivery within a hackathon timeframe
 - Keeping the prototype honest about browser-local data and production limitations
 - Making the animated hero scale correctly on narrow mobile screens used through the judge QR code
 - Balancing feature depth with a reliable end-to-end demonstration
@@ -605,10 +623,12 @@ These limitations are disclosed throughout the product so the prototype does not
 ## Project originality, assets, and licenses
 
 - The project implementation in this repository was created for MYHack 2026.
-- The project uses openly available development frameworks, APIs, and SDKs.
+- The project uses openly available development frameworks, APIs, and SDKs, including the Google Gemini API and Gmail API.
+- Gemini, OpenAI Codex, ChatGPT Plus, and Claude were used as coding and development assistants.
+- The team reviewed, modified, tested, and took responsibility for all submitted implementation and product decisions.
 - The prototype uses fictional and synthetic demonstration data.
 - Team-created source code is released under the MIT License.
-- Third-party packages and services remain governed by their respective licenses and terms.
+- Third-party packages, APIs, AI tools, and services remain governed by their respective licenses and terms.
 - No secret keys, OAuth credentials, or private student data should ever be committed.
 
 See [`LICENSE`](./LICENSE) for the full project license.
