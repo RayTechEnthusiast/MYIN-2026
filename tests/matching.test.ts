@@ -17,7 +17,10 @@ test("strong match is explainable and capped at 100", () => {
   assert.ok(result.total >= 70);
   assert.ok(result.total <= 100);
   assert.equal(
-    Object.values(result.breakdown).reduce((sum, value) => sum + value, 0),
+    Object.values(result.breakdown).reduce(
+      (sum, value) => sum + value,
+      0,
+    ),
     result.total,
   );
   assert.ok(result.explanations.length > 0);
@@ -70,14 +73,44 @@ test("community intelligence exposes aggregate gaps without student names", () =
 
 test("weekly pilot email is privacy-safe and clearly labeled as demo data", () => {
   const email = buildWeeklyPilotEmail(
-    "MYIN Test Employer",
+    "Crescent Robotics",
+    ["Technology", "Engineering", "Robotics"],
     new Date("2026-07-27T13:17:00.000Z"),
   );
 
   assert.match(email.subject, /MYIN Weekly Talent Brief/);
   assert.match(email.body, /synthetic demo cohort/i);
-  assert.match(email.body, /Candidate [A-Z]{1,3}/);
+  assert.match(
+    email.body,
+    /Focus areas: Technology, Engineering, Robotics/,
+  );
   assert.equal(email.body.includes(student.name), false);
   assert.ok(email.candidateCount > 0);
   assert.ok(email.gapCount > 0);
+});
+
+test("weekly pilot selects each student once and only from employer-relevant pathways", () => {
+  const email = buildWeeklyPilotEmail(
+    "Crescent Robotics",
+    ["Technology", "Engineering", "Robotics"],
+    new Date("2026-07-27T13:17:00.000Z"),
+  );
+
+  const candidateLabels = [
+    ...email.body.matchAll(/^\d+\. Candidate ([A-Z]{1,3})/gm),
+  ].map((match) => match[1]);
+
+  assert.equal(
+    candidateLabels.length,
+    new Set(candidateLabels).size,
+  );
+  assert.equal(
+    (email.body.match(/Candidate AR/g) || []).length,
+    1,
+  );
+  assert.equal(
+    email.body.includes("Community Food Drive Creative Team"),
+    false,
+  );
+  assert.ok(email.candidateCount <= 3);
 });

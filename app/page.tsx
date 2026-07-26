@@ -3,6 +3,7 @@ import Image from "next/image";
 import { SiteHeader } from "@/components/SiteHeader";
 import { CyclingHeroText } from "@/components/CyclingHeroText";
 import { FloatingImpactBubbles } from "@/components/FloatingImpactBubbles";
+import { EmailOnlyEmployerSignup } from "@/components/EmailOnlyEmployerSignup";
 
 const orbitBranches = [
   { label: "Internships", icon: "▣", angle: "-90deg" },
@@ -37,6 +38,7 @@ export default function LandingPage() {
               <div className="network-actions">
                 <Link className="button network-primary" href="/auth?mode=login">Explore opportunities</Link>
                 <Link className="button network-secondary" href="/auth?mode=signup">Join MYIN</Link>
+                <Link className="button network-secondary" href="#employer-brief">Employer email brief</Link>
               </div>
               <div className="network-values" aria-label="MYIN values">
                 <span>◇ Faith-aligned</span><span>● Community-driven</span><span>✦ Purpose-powered</span>
@@ -66,7 +68,7 @@ export default function LandingPage() {
               </div>
 
               <div className="orbit-wheel orbit-wheel-people">
-                {satellitePeople.map((angle, index) => (
+                {satellitePeople.map((angle) => (
                   <div
                     key={angle}
                     className="orbit-position small"
@@ -112,6 +114,8 @@ export default function LandingPage() {
             <article className="feature-card"><span className="feature-number">03</span><h3>For the community</h3><p>Turn youth talent into service, mentorship, leadership, stronger organizations, and measurable pathways into college and careers.</p></article>
           </div>
         </section>
+
+        <EmailOnlyEmployerSignup />
 
         <section className="section dark-band">
           <div className="container split-section">
