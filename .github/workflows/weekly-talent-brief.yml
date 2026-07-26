@@ -1,0 +1,37 @@
+name: Weekly MYIN Talent Brief
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 13 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  send-weekly-brief:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Send pilot employer brief
+        env:
+          WEEKLY_CRON_SECRET: ${{ secrets.WEEKLY_CRON_SECRET }}
+          WEEKLY_ENDPOINT: https://myin-2026.onrender.com/api/gmail/weekly/send
+        run: |
+          set -euo pipefail
+
+          if [ -z "${WEEKLY_CRON_SECRET}" ]; then
+            echo "WEEKLY_CRON_SECRET is not configured in GitHub Actions."
+            exit 1
+          fi
+
+          curl \
+            --fail-with-body \
+            --silent \
+            --show-error \
+            --max-time 120 \
+            --request POST \
+            --header "Authorization: Bearer ${WEEKLY_CRON_SECRET}" \
+            --header "Content-Type: application/json" \
+            "${WEEKLY_ENDPOINT}"

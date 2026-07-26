@@ -1,0 +1,119 @@
+/*
+ * Mobile landing-hero containment.
+ *
+ * The original mobile rule forced the orbit artwork to 430px wide and shifted
+ * it left by 50%. On narrower phones the hero's overflow clipping hid part of
+ * the orbit. These late-loaded overrides keep the complete graphic inside the
+ * viewport and scale the orbit radii with the device width.
+ */
+
+@media (max-width: 700px) {
+  .network-hero {
+    min-height: auto;
+    padding: 38px 0 24px;
+  }
+
+  .network-hero-grid {
+    min-height: auto;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  .network-copy {
+    min-width: 0;
+    padding-top: 12px;
+  }
+
+  .network-copy h1 {
+    font-size: clamp(2.75rem, 13vw, 4.35rem);
+    line-height: 0.92;
+    overflow-wrap: anywhere;
+  }
+
+  .network-divider {
+    width: min(290px, 82vw);
+  }
+
+  .network-visual {
+    --myin-main-orbit-radius: min(41vw, 176px);
+    --myin-small-orbit-radius: min(30vw, 128px);
+
+    width: min(100%, 430px);
+    max-width: 100%;
+    left: auto;
+    transform: none;
+    margin: 12px auto 0;
+    aspect-ratio: 1 / 1;
+  }
+
+  .orbit-position {
+    transform:
+      rotate(var(--angle))
+      translateY(-45%)
+      translateY(calc(-1 * var(--myin-main-orbit-radius)));
+  }
+
+  .orbit-position.small {
+    transform:
+      rotate(var(--angle))
+      translateY(-45%)
+      translateY(calc(-1 * var(--myin-small-orbit-radius)));
+  }
+
+  .orbit-counter {
+    width: clamp(76px, 23vw, 92px);
+    margin-left: clamp(-46px, -11.5vw, -38px);
+    margin-top: -38px;
+    gap: 5px;
+  }
+
+  .orbit-branch-node {
+    width: clamp(42px, 13vw, 52px);
+    height: clamp(42px, 13vw, 52px);
+  }
+
+  .orbit-icon {
+    font-size: clamp(1.05rem, 4.5vw, 1.35rem);
+  }
+
+  .orbit-counter strong {
+    max-width: 84px;
+    font-size: clamp(0.58rem, 2.55vw, 0.7rem);
+    line-height: 1.15;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .network-center {
+    width: clamp(118px, 36vw, 154px);
+    height: clamp(118px, 36vw, 154px);
+  }
+
+  .network-center img {
+    width: 78%;
+  }
+
+  .network-stats {
+    width: 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .network-visual {
+    --myin-main-orbit-radius: 40vw;
+    --myin-small-orbit-radius: 28vw;
+  }
+
+  .network-copy > p {
+    font-size: 1rem;
+  }
+
+  .network-actions {
+    display: grid;
+  }
+
+  .network-actions .button {
+    width: 100%;
+  }
+}
