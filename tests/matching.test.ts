@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { calculateMatch } from "../lib/matching";
+import { buildCommunityOpportunityAnalysis, buildStudentGrowthPlan } from "../lib/opportunity-intelligence";
 import { seedState } from "../lib/seed";
 
 const state = seedState();
@@ -34,4 +35,19 @@ test("irrelevant identity changes do not change deterministic score", () => {
   const b = calculateMatch({ ...student, name: "Synthetic Student B" }, strong);
   assert.equal(a.total, b.total);
   assert.deepEqual(a.breakdown, b.breakdown);
+});
+
+
+test("student growth plan is grounded in active opportunity demand", () => {
+  const plan = buildStudentGrowthPlan(student, state.opportunities);
+  assert.ok(plan.relevantOpportunities > 0);
+  assert.ok(plan.recommendations.length > 0);
+  assert.ok(plan.recommendations.every((item) => item.demandCount > 0));
+});
+
+test("community intelligence exposes aggregate gaps without student names", () => {
+  const analysis = buildCommunityOpportunityAnalysis(state.students, state.opportunities);
+  assert.ok(analysis.gaps.length > 0);
+  assert.equal(analysis.productionPrivacyThreshold, 5);
+  assert.ok(analysis.gaps.every((gap) => !gap.recommendedTitle.includes(student.name)));
 });

@@ -5,12 +5,14 @@ import { AppShell } from "./AppShell";
 import { Modal } from "./Modal";
 import { CandidateMatchCard } from "./CandidateMatchCard";
 import { WeeklyTalentBrief } from "./WeeklyTalentBrief";
+import { CommunityOpportunityGapsPanel } from "./OpportunityIntelligence";
 import { useApp } from "./AppProvider";
 import { calculateMatch } from "@/lib/matching";
+import type { OpportunityGap } from "@/lib/opportunity-intelligence";
 import type { Opportunity, OrganizationProfile, OutreachLead, StudentProfile } from "@/lib/types";
 import { formatDate, id, initials, splitList } from "@/lib/utils";
 
-const tabs = ["Overview", "Opportunities", "Candidates", "Messages", "Organization Profile", "Website Research"];
+const tabs = ["Overview", "Community Insights", "Opportunities", "Candidates", "Messages", "Organization Profile", "Website Research"];
 
 const emptyDraft = {
   title: "",
@@ -253,6 +255,40 @@ export function OrganizationApp() {
     setActive("Organization Profile");
   };
 
+  const createOpportunityFromGap = (gap: OpportunityGap) => {
+    const deadline = new Date();
+    deadline.setDate(deadline.getDate() + 30);
+
+    setDraft({
+      ...emptyDraft,
+      title: gap.recommendedTitle,
+      type: gap.recommendedType,
+      description: `Create a supervised, beginner-friendly ${gap.topic.toLowerCase()} opportunity based on aggregate youth demand. The organization must review the schedule, safety details, responsibilities, and real capacity before publishing.`,
+      skills: gap.recommendedSkills,
+      interests: [gap.topic],
+      careerGoals: gap.recommendedCareerGoals,
+      format: gap.recommendedFormat,
+      availableDays:
+        gap.recommendedDay === "Flexible" ? [] : [gap.recommendedDay],
+      commitment: "2–4 hours per week for six weeks",
+      weeklyHours: 3,
+      ageMin: 14,
+      ageMax: 18,
+      experienceLevel: "Beginner",
+      deadline: deadline.toISOString().slice(0, 10),
+      supervision: organization.youthSafety,
+      impact: `Responds to an aggregate ${gap.topic.toLowerCase()} opportunity gap affecting approximately ${gap.eligibleYouth} opted-in youth in the current analysis.`,
+      confidence: gap.confidence === "strong signal" ? 0.9 : gap.confidence === "developing signal" ? 0.75 : 0.55,
+      missingFields: ["organization capacity", "final schedule", "application steps"],
+    });
+    setRoughText("");
+    setExtractMode("community intelligence");
+    setNotice(
+      "MYIN prefilled an editable opportunity from aggregate demand. Review every field and complete safety details before publishing.",
+    );
+    setActive("Opportunities");
+  };
+
   return (
     <AppShell tabs={tabs} active={active} onTab={setActive}>
       {active === "Overview" && (
@@ -298,6 +334,14 @@ export function OrganizationApp() {
           <div className="metric-grid"><article><span>Open opportunities</span><strong>{stats.open}</strong><small>Published in the local demo</small></article><article><span>Student interest</span><strong>{stats.interested}</strong><small>Student-controlled first signal</small></article><article><span>Strong candidates</span><strong>{stats.strongCandidates}</strong><small>85%+ deterministic fit</small></article><article><span>Paid / unpaid</span><strong>{stats.paid} / {stats.unpaid}</strong><small>Compensation is visible before applying</small></article></div>
           <div className="two-panel-grid"><section className="panel-card"><span className="kicker">Candidate pipeline</span><h2>Fit before identity</h2>{candidateRows.slice(0,3).map((row) => <div className="candidate-mini" key={`${row.student.id}-${row.opportunity.id}`}><span className="safe-avatar">{initials(row.student.name)}</span><div><strong>{row.interested ? "Interested candidate" : "Discoverable candidate"}</strong><small>{row.opportunity.title}</small></div><span className="score-badge">{row.score}%</span></div>)}{candidateRows.length === 0 && <p className="muted">No candidates above 70% yet.</p>}</section><section className="panel-card"><span className="kicker">Trust readiness</span><h2>Organization profile signals</h2>{[['Mission',organization.mission],['Youth safety',organization.youthSafety],['Privacy',organization.privacyStandards],['Accommodations',organization.accommodations]].map(([label,value]) => <div className="readiness-row" key={label}><span>{label}</span><strong>{value ? "Disclosed" : "Missing"}</strong></div>)}<button className="button ghost" onClick={() => setActive("Organization Profile")}>Strengthen organization profile</button></section></div>
         </div>
+      )}
+
+      {active === "Community Insights" && (
+        <CommunityOpportunityGapsPanel
+          students={state.students}
+          opportunities={state.opportunities}
+          onCreateOpportunity={createOpportunityFromGap}
+        />
       )}
 
       {active === "Opportunities" && (

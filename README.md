@@ -57,6 +57,7 @@ Without a key, MYIN uses honest local fallback behavior:
 - Filters for type, format, location, paid/unpaid, urgency, status, and faith-aware accommodations
 - Match confidence and missing-data explanations
 - Skill constellation and connection lenses: core edge, adjacent expansion, rounding opportunity
+- Opportunity Readiness Coach that uses current employer demand to recommend honest skill, evidence, and availability improvements
 - Save, dismiss, express interest, email draft, and controlled messaging
 - Opportunity Radar with ZIP/browser-location handling
 - Printable and downloadable Proof Portfolio with verification labels
@@ -70,6 +71,7 @@ Without a key, MYIN uses honest local fallback behavior:
 - Paid/unpaid and candidate metrics
 - Staged candidate identity and privacy-safe profile view
 - Controlled introduction requests and moderated demo messaging
+- Community Opportunity Gap Radar that compares opted-in youth demand with current supply and prefills editable recommended opportunities
 
 ### Ethics and safety
 
@@ -79,6 +81,7 @@ Without a key, MYIN uses honest local fallback behavior:
 - Confidence as completeness, not truth
 - Ethical-fit signals as disclosures, not moral judgment
 - No unrestricted adult-to-minor direct messaging
+- Community intelligence uses aggregate fields only; a production version would enforce a minimum cohort size before exposing trends
 - Explicit prototype limitations
 
 ## Matching rubric
@@ -131,6 +134,7 @@ A starter `render.yaml` is included. Add `GEMINI_API_KEY` only in Render environ
 - No production moderation or religious rulings
 - No real guardian approval infrastructure
 - Demo verification badges and fictional data only
+- Community Opportunity Gap Radar uses five additional clearly synthetic cohort profiles to demonstrate privacy-aware aggregation; these are not real adoption metrics
 
 ## License
 

@@ -5,12 +5,13 @@ import { AppShell } from "./AppShell";
 import { Modal } from "./Modal";
 import { OpportunityCard } from "./OpportunityCard";
 import { RadarChart } from "./RadarChart";
+import { StudentGrowthPlanPanel } from "./OpportunityIntelligence";
 import { useApp } from "./AppProvider";
 import { calculateMatch, scoreRadar } from "@/lib/matching";
 import type { ExperienceItem, Opportunity, StudentProfile } from "@/lib/types";
 import { formatDate, id, initials, profileCompleteness, splitList } from "@/lib/utils";
 
-const tabs = ["Home", "Opportunities", "Opportunity Radar", "Messages", "Profile", "Portfolio"];
+const tabs = ["Home", "Growth Plan", "Opportunities", "Opportunity Radar", "Messages", "Profile", "Portfolio"];
 
 interface FilterState {
   type: string;
@@ -329,6 +330,15 @@ export function StudentApp() {
           </div>
           <section className="panel-card"><div className="section-heading compact"><span className="kicker">Connection intelligence</span><h2>Strengthen your edge without becoming one-dimensional.</h2></div><div className="three-card-grid compact-cards">{["Core edge","Adjacent expansion","Rounding opportunity"].map((lens) => { const item = ranked.find((entry) => entry.match.connectionLens === lens); return <article key={lens}><span className="kicker">{lens}</span><h3>{item?.opportunity.title || "No current match"}</h3><p>{lens === "Core edge" ? "Deepens the skills and mission areas already making you distinctive." : lens === "Adjacent expansion" ? "Adds a complementary ability close to your current path." : "Builds a weaker area without becoming random or disconnected."}</p></article>; })}</div></section>
         </div>
+      )}
+
+      {active === "Growth Plan" && (
+        <StudentGrowthPlanPanel
+          student={student}
+          opportunities={state.opportunities}
+          onViewOpportunity={setSelected}
+          onOpenProfile={() => setActive("Profile")}
+        />
       )}
 
       {active === "Opportunities" && (

@@ -1,4 +1,5 @@
 import type { AppState, Opportunity, OrganizationProfile, StudentProfile } from "./types";
+import { demoCohortStudents } from "./demo-cohort";
 
 const now = "2026-07-25T18:00:00.000Z";
 
@@ -368,15 +369,21 @@ export function seedState(): AppState {
         createdAt: now,
       },
     ],
-    students: [seedStudent],
+    students: [seedStudent, ...demoCohortStudents],
     organizations: [seedOrganization],
     opportunities: seedOpportunities,
     interests: [],
     conversations: [],
     outreachLeads: [],
-    savedOpportunityIds: { [seedStudent.id]: [] },
-    dismissedOpportunityIds: { [seedStudent.id]: [] },
-    appliedOpportunityIds: { [seedStudent.id]: [] },
+    savedOpportunityIds: Object.fromEntries(
+      [seedStudent, ...demoCohortStudents].map((student) => [student.id, []]),
+    ),
+    dismissedOpportunityIds: Object.fromEntries(
+      [seedStudent, ...demoCohortStudents].map((student) => [student.id, []]),
+    ),
+    appliedOpportunityIds: Object.fromEntries(
+      [seedStudent, ...demoCohortStudents].map((student) => [student.id, []]),
+    ),
     lastMatchRefresh: now,
   };
 }

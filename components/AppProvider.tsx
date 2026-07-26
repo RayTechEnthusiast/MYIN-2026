@@ -104,7 +104,32 @@ function loadState(): AppState {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored) as AppState;
-      if (parsed.version === 3 && Array.isArray(parsed.accounts)) return parsed;
+      if (parsed.version === 3 && Array.isArray(parsed.accounts)) {
+        const seeded = seedState();
+        const cohort = seeded.students.filter((student) =>
+          student.id.startsWith("student_cohort_"),
+        );
+        const existingIds = new Set(parsed.students.map((student) => student.id));
+        const missingCohort = cohort.filter((student) => !existingIds.has(student.id));
+        if (!missingCohort.length) return parsed;
+
+        return {
+          ...parsed,
+          students: [...parsed.students, ...missingCohort],
+          savedOpportunityIds: {
+            ...parsed.savedOpportunityIds,
+            ...Object.fromEntries(missingCohort.map((student) => [student.id, []])),
+          },
+          dismissedOpportunityIds: {
+            ...parsed.dismissedOpportunityIds,
+            ...Object.fromEntries(missingCohort.map((student) => [student.id, []])),
+          },
+          appliedOpportunityIds: {
+            ...parsed.appliedOpportunityIds,
+            ...Object.fromEntries(missingCohort.map((student) => [student.id, []])),
+          },
+        };
+      }
     }
   } catch {
     // Seed state below.
