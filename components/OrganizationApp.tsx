@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "./AppShell";
 import { Modal } from "./Modal";
 import { CandidateMatchCard } from "./CandidateMatchCard";
@@ -66,15 +66,40 @@ export function OrganizationApp() {
   const [orgDraft, setOrgDraft] = useState<OrganizationProfile | null>(currentOrganization);
   const [messageInput, setMessageInput] = useState("");
   const [messageNotice, setMessageNotice] = useState("");
+  const [onboardingMode, setOnboardingMode] = useState(false);
   const [outreach, setOutreach] = useState({ businessName: "", website: "", email: "", suppliedContent: "" });
+
+  useEffect(() => {
+    if (!currentOrganization) return;
+
+    setOutreach((current) => ({
+      businessName: current.businessName || currentOrganization.name,
+      website: current.website || currentOrganization.website,
+      email: current.email || currentOrganization.email,
+      suppliedContent: current.suppliedContent,
+    }));
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("onboarding") === "website-research") {
+      setActive("Website Research");
+      setOnboardingMode(true);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [currentOrganization?.id]);
 
   if (!currentOrganization) return <div className="loading-screen">Organization profile not found.</div>;
   const organization = currentOrganization;
+  const profileNeedsImport = !organization.website || !organization.mission;
   if (!orgDraft || orgDraft.id !== organization.id) setOrgDraft(organization);
 
   const ownOpportunities = state.opportunities.filter((item) => item.orgId === organization.id);
   const orgInterests = state.interests.filter((interest) => interest.organizationId === organization.id);
   const conversations = state.conversations.filter((conversation) => conversation.organizationId === organization.id);
+  const researchDrafts = state.outreachLeads.filter((lead) =>
+    (organization.email &&
+      lead.email.toLowerCase() === organization.email.toLowerCase()) ||
+    lead.businessName.toLowerCase() === organization.name.toLowerCase(),
+  );
 
   const candidateRows = useMemo(() => {
     const rows: { student: StudentProfile; opportunity: Opportunity; score: number; interestId?: string; interested: boolean }[] = [];
@@ -189,12 +214,87 @@ export function OrganizationApp() {
     finally { setBusy(false); }
   };
 
+  const applyResearchToOrganization = (lead: OutreachLead) => {
+    const researched = lead.researchDraft;
+
+    const nextProfile: OrganizationProfile = {
+      ...organization,
+      name: researched?.name?.trim() || organization.name,
+      website: lead.website || organization.website,
+      email: lead.email || organization.email,
+      mission: researched?.mission?.trim() || organization.mission,
+      programs: researched?.programs?.length
+        ? researched.programs
+        : organization.programs,
+      audience: researched?.audience?.length
+        ? researched.audience
+        : organization.audience,
+      location: researched?.location?.trim() || organization.location,
+      contactName:
+        researched?.contactName?.trim() || organization.contactName,
+      youthSafety:
+        researched?.youthSafety?.trim() || organization.youthSafety,
+      privacyStandards:
+        researched?.privacyStandards?.trim() ||
+        organization.privacyStandards,
+      accommodations:
+        researched?.accommodations?.trim() ||
+        organization.accommodations,
+      lastUpdated: new Date().toISOString(),
+    };
+
+    updateOrganization(nextProfile);
+    setOrgDraft(nextProfile);
+    updateOutreachLead({ ...lead, status: "confirmed" });
+    setOnboardingMode(false);
+    setNotice(
+      "Website research was applied to your organization profile. Review and edit any remaining fields before publishing opportunities.",
+    );
+    setActive("Organization Profile");
+  };
+
   return (
     <AppShell tabs={tabs} active={active} onTab={setActive}>
       {active === "Overview" && (
         <div className="dashboard-stack">
           <header className="app-page-header"><div><span className="kicker">Organization command center</span><h1>{organization.name}</h1><p>Publish safer opportunities, understand candidate fit, and reduce recruiting friction without exposing unnecessary student information.</p></div><button className="button" onClick={() => setActive("Opportunities")}>Create opportunity</button></header>
-          <section className="recommended-action"><div><span className="kicker">Best recommended action</span><h2>{orgInterests.length ? "Review a student-initiated interest signal" : ownOpportunities.length ? "Improve listing confidence" : "Publish your first opportunity"}</h2><p>{orgInterests.length ? `${orgInterests.length} student interest signal${orgInterests.length === 1 ? "" : "s"} can now move into a controlled introduction.` : ownOpportunities.length ? "Clear missing safety and accommodation fields to improve trust and match confidence." : "Paste a rough announcement. AI will structure it into an editable review draft."}</p></div><button className="button secondary" onClick={() => setActive(orgInterests.length ? "Candidates" : "Opportunities")}>Take action</button></section>
+          <section className="recommended-action">
+            <div>
+              <span className="kicker">Best recommended action</span>
+              <h2>
+                {profileNeedsImport
+                  ? "Import your organization information"
+                  : orgInterests.length
+                    ? "Review a student-initiated interest signal"
+                    : ownOpportunities.length
+                      ? "Improve listing confidence"
+                      : "Publish your first opportunity"}
+              </h2>
+              <p>
+                {profileNeedsImport
+                  ? "Paste one public website link. MYIN retrieves available organization details, structures them with Gemini, and leaves every field reviewable."
+                  : orgInterests.length
+                    ? `${orgInterests.length} student interest signal${orgInterests.length === 1 ? "" : "s"} can now move into a controlled introduction.`
+                    : ownOpportunities.length
+                      ? "Clear missing safety and accommodation fields to improve trust and match confidence."
+                      : "Paste a rough announcement. AI will structure it into an editable review draft."}
+              </p>
+            </div>
+            <button
+              className="button secondary"
+              onClick={() =>
+                setActive(
+                  profileNeedsImport
+                    ? "Website Research"
+                    : orgInterests.length
+                      ? "Candidates"
+                      : "Opportunities",
+                )
+              }
+            >
+              {profileNeedsImport ? "Import from website" : "Take action"}
+            </button>
+          </section>
           <div className="metric-grid"><article><span>Open opportunities</span><strong>{stats.open}</strong><small>Published in the local demo</small></article><article><span>Student interest</span><strong>{stats.interested}</strong><small>Student-controlled first signal</small></article><article><span>Strong candidates</span><strong>{stats.strongCandidates}</strong><small>85%+ deterministic fit</small></article><article><span>Paid / unpaid</span><strong>{stats.paid} / {stats.unpaid}</strong><small>Compensation is visible before applying</small></article></div>
           <div className="two-panel-grid"><section className="panel-card"><span className="kicker">Candidate pipeline</span><h2>Fit before identity</h2>{candidateRows.slice(0,3).map((row) => <div className="candidate-mini" key={`${row.student.id}-${row.opportunity.id}`}><span className="safe-avatar">{initials(row.student.name)}</span><div><strong>{row.interested ? "Interested candidate" : "Discoverable candidate"}</strong><small>{row.opportunity.title}</small></div><span className="score-badge">{row.score}%</span></div>)}{candidateRows.length === 0 && <p className="muted">No candidates above 70% yet.</p>}</section><section className="panel-card"><span className="kicker">Trust readiness</span><h2>Organization profile signals</h2>{[['Mission',organization.mission],['Youth safety',organization.youthSafety],['Privacy',organization.privacyStandards],['Accommodations',organization.accommodations]].map(([label,value]) => <div className="readiness-row" key={label}><span>{label}</span><strong>{value ? "Disclosed" : "Missing"}</strong></div>)}<button className="button ghost" onClick={() => setActive("Organization Profile")}>Strengthen organization profile</button></section></div>
         </div>
@@ -264,7 +364,195 @@ export function OrganizationApp() {
       )}
 
       {active === "Website Research" && (
-        <div className="dashboard-stack"><header className="app-page-header"><div><span className="kicker">AI website research</span><h1>Research one public page, then review every field.</h1><p>MYIN reviews one relevant public page or employer-supplied content, respects robots restrictions, and never auto-publishes.</p></div></header><section className="two-panel-grid align-start"><div className="panel-card form-stack"><label>Business or organization name<input value={outreach.businessName} onChange={(e) => setOutreach({ ...outreach, businessName: e.target.value })} /></label><label>Public website<input type="url" value={outreach.website} onChange={(e) => setOutreach({ ...outreach, website: e.target.value })} /></label><label>Email<input type="email" value={outreach.email} onChange={(e) => setOutreach({ ...outreach, email: e.target.value })} /></label><label>Optional supplied content<textarea value={outreach.suppliedContent} onChange={(e) => setOutreach({ ...outreach, suppliedContent: e.target.value })} /></label><button className="button" onClick={researchOutreach} disabled={busy}>{busy ? "Researching one public source…" : "Create review draft"}</button></div><div className="panel-card"><h2>Safety boundary</h2><ul className="check-list"><li>One public URL, not a broad crawler</li><li>Robots restrictions and timeouts respected</li><li>Only public or employer-supplied text</li><li>Missing youth-safety information is surfaced</li><li>Organization edits and confirms before publishing</li></ul></div></section><section className="panel-card"><h2>Review drafts</h2>{state.outreachLeads.length ? state.outreachLeads.map((lead) => <article className="research-row" key={lead.id}><div><h3>{lead.researchDraft?.name || lead.businessName}</h3><p>{lead.researchDraft?.mission || "Mission not found in reviewed content."}</p><small>{lead.website}</small></div><div><span className="confidence-pill medium">{Math.round((lead.researchDraft?.confidence || 0)*100)}% confidence</span><p><strong>Missing:</strong> {lead.researchDraft?.missingFields?.join(", ") || "Human confirmation still required"}</p><button className="button ghost" onClick={() => updateOutreachLead({ ...lead, status: "confirmed" })}>{lead.status === "confirmed" ? "Confirmed draft" : "Confirm review only"}</button></div></article>) : <p className="muted">No outreach drafts yet.</p>}</section>{notice && <div className="notice">{notice}</div>}</div>
+        <div className="dashboard-stack">
+          <header className="app-page-header">
+            <div>
+              <span className="kicker">AI website research</span>
+              <h1>Paste one link. Start with a nearly complete profile.</h1>
+              <p>
+                MYIN retrieves one relevant public page, structures available
+                information with Gemini, and keeps every field editable before
+                it is applied.
+              </p>
+            </div>
+          </header>
+
+          {onboardingMode && (
+            <section className="recommended-action">
+              <div>
+                <span className="kicker">Organization onboarding</span>
+                <h2>Import organization information from your website</h2>
+                <p>
+                  Your organization name and email are already filled in.
+                  Add the public website, retrieve available details, then
+                  review before applying them to your profile.
+                </p>
+              </div>
+              <button
+                className="button secondary"
+                onClick={() => {
+                  setOnboardingMode(false);
+                  setActive("Overview");
+                }}
+              >
+                Skip for now
+              </button>
+            </section>
+          )}
+
+          <section className="two-panel-grid align-start">
+            <div className="panel-card form-stack">
+              <label>
+                Business or organization name
+                <input
+                  value={outreach.businessName}
+                  onChange={(event) =>
+                    setOutreach({
+                      ...outreach,
+                      businessName: event.target.value,
+                    })
+                  }
+                />
+              </label>
+
+              <label>
+                Public website
+                <input
+                  type="url"
+                  value={outreach.website}
+                  onChange={(event) =>
+                    setOutreach({
+                      ...outreach,
+                      website: event.target.value,
+                    })
+                  }
+                  placeholder="https://yourorganization.org/about"
+                />
+              </label>
+
+              <label>
+                Email
+                <input
+                  type="email"
+                  value={outreach.email}
+                  onChange={(event) =>
+                    setOutreach({
+                      ...outreach,
+                      email: event.target.value,
+                    })
+                  }
+                />
+              </label>
+
+              <label>
+                Optional supplied content
+                <textarea
+                  value={outreach.suppliedContent}
+                  onChange={(event) =>
+                    setOutreach({
+                      ...outreach,
+                      suppliedContent: event.target.value,
+                    })
+                  }
+                  placeholder="Paste an About page or program description only when the public page cannot be retrieved."
+                />
+              </label>
+
+              <button
+                className="button"
+                onClick={researchOutreach}
+                disabled={
+                  busy ||
+                  !outreach.businessName.trim() ||
+                  !outreach.website.trim() ||
+                  !outreach.email.trim()
+                }
+              >
+                {busy
+                  ? "Retrieving one public source…"
+                  : "Retrieve online information"}
+              </button>
+
+              <p className="microcopy">
+                MYIN retrieves one public page rather than broadly crawling the
+                internet. Missing information stays visibly missing.
+              </p>
+            </div>
+
+            <div className="panel-card">
+              <h2>Safety boundary</h2>
+              <ul className="check-list">
+                <li>One public URL, not a broad crawler</li>
+                <li>Robots restrictions and timeouts respected</li>
+                <li>Only public or employer-supplied text</li>
+                <li>Missing youth-safety information is surfaced</li>
+                <li>Organization reviews before applying information</li>
+              </ul>
+            </div>
+          </section>
+
+          <section className="panel-card">
+            <h2>Review drafts</h2>
+
+            {researchDrafts.length ? (
+              researchDrafts.map((lead) => (
+                <article className="research-row" key={lead.id}>
+                  <div>
+                    <h3>{lead.researchDraft?.name || lead.businessName}</h3>
+                    <p>
+                      {lead.researchDraft?.mission ||
+                        "Mission not found in reviewed content."}
+                    </p>
+                    <small>{lead.website}</small>
+                  </div>
+
+                  <div>
+                    <span className="confidence-pill medium">
+                      {Math.round(
+                        (lead.researchDraft?.confidence || 0) * 100,
+                      )}
+                      % confidence
+                    </span>
+                    <p>
+                      <strong>Missing:</strong>{" "}
+                      {lead.researchDraft?.missingFields?.join(", ") ||
+                        "Human confirmation still required"}
+                    </p>
+
+                    <div className="card-actions">
+                      <button
+                        className="button"
+                        onClick={() => applyResearchToOrganization(lead)}
+                      >
+                        Apply to my organization profile
+                      </button>
+
+                      <button
+                        className="button ghost"
+                        onClick={() =>
+                          updateOutreachLead({
+                            ...lead,
+                            status: "confirmed",
+                          })
+                        }
+                      >
+                        {lead.status === "confirmed"
+                          ? "Reviewed"
+                          : "Mark reviewed only"}
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))
+            ) : (
+              <p className="muted">
+                No review drafts yet. Paste your website above to begin.
+              </p>
+            )}
+          </section>
+
+          {notice && <div className="notice">{notice}</div>}
+        </div>
       )}
 
       <Modal open={Boolean(selectedCandidate)} onClose={() => setSelectedCandidate(null)} title="Privacy-safe candidate profile" wide>

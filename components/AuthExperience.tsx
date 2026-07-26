@@ -47,7 +47,11 @@ export function AuthExperience() {
     setMessage(result.message);
 
     if (result.ok) {
-      router.push("/app");
+      router.push(
+        role === "organization"
+          ? "/app?onboarding=website-research"
+          : "/app",
+      );
     }
   };
 
@@ -223,7 +227,7 @@ export function AuthExperience() {
               ) : (
                 <label>
                   Organization email
-                  <input name="email" type="email" />
+                  <input name="email" type="email" required />
                 </label>
               )}
 
