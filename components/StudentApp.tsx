@@ -348,7 +348,7 @@ export function StudentApp() {
             <button className="text-button" onClick={() => setFilters(defaultFilters)}>Clear filters</button>
           </section>
           <div className="results-summary"><strong>{filtered.length} opportunities</strong><span>{ranked.length} total above the 70% threshold</span></div>
-          {filtered.length ? filtered.map(({ opportunity, match }) => <OpportunityCard key={opportunity.id} opportunity={opportunity} match={match} saved={saved.includes(opportunity.id)} applied={applied.includes(opportunity.id)} onView={() => setSelected(opportunity)} onSave={() => toggleSaved(student.id, opportunity.id)} onInterest={() => expressInterest(student.id, opportunity.id)} onDismiss={() => dismissOpportunity(student.id, opportunity.id)} onDraftEmail={() => openEmail(opportunity)} />) : <div className="empty-state"><h2>No opportunities match these filters.</h2><p>Clear one filter or strengthen your profile. MYIN does not fill empty states with fake results.</p></div>}
+          {filtered.length ? filtered.map(({ opportunity, match }) => <OpportunityCard key={opportunity.id} student={student} opportunity={opportunity} match={match} saved={saved.includes(opportunity.id)} applied={applied.includes(opportunity.id)} onView={() => setSelected(opportunity)} onSave={() => toggleSaved(student.id, opportunity.id)} onInterest={() => expressInterest(student.id, opportunity.id)} onDismiss={() => dismissOpportunity(student.id, opportunity.id)} onDraftEmail={() => openEmail(opportunity)} />) : <div className="empty-state"><h2>No opportunities match these filters.</h2><p>Clear one filter or strengthen your profile. MYIN does not fill empty states with fake results.</p></div>}
         </div>
       )}
 

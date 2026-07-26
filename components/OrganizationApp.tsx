@@ -3,12 +3,14 @@
 import { useMemo, useState } from "react";
 import { AppShell } from "./AppShell";
 import { Modal } from "./Modal";
+import { CandidateMatchCard } from "./CandidateMatchCard";
+import { WeeklyTalentBrief } from "./WeeklyTalentBrief";
 import { useApp } from "./AppProvider";
 import { calculateMatch } from "@/lib/matching";
 import type { Opportunity, OrganizationProfile, OutreachLead, StudentProfile } from "@/lib/types";
 import { formatDate, id, initials, splitList } from "@/lib/utils";
 
-const tabs = ["Overview", "Opportunities", "Candidates", "Messages", "Organization Profile", "Outreach"];
+const tabs = ["Overview", "Opportunities", "Candidates", "Messages", "Organization Profile", "Website Research"];
 
 const emptyDraft = {
   title: "",
@@ -214,7 +216,42 @@ export function OrganizationApp() {
       {active === "Candidates" && (
         <div className="dashboard-stack">
           <header className="app-page-header"><div><span className="kicker">Privacy-safe candidate view</span><h1>Evaluate fit before requesting identity.</h1><p>Only fictional demo profiles are used. Initials, skills, evidence, and availability appear before controlled introduction.</p></div></header>
-          {candidateRows.length ? <div className="candidate-grid">{candidateRows.map((row) => <article className={`candidate-card ${row.interested ? "interested" : ""}`} key={`${row.student.id}-${row.opportunity.id}`}><header><span className="safe-avatar">{initials(row.student.name)}</span><div><span className="kicker">{row.interested ? "Student initiated interest" : "Discoverable safe profile"}</span><h2>{row.interested ? "Interested candidate" : `Candidate ${initials(row.student.name)}`}</h2></div><strong className="score-badge">{row.score}%</strong></header><p><strong>For:</strong> {row.opportunity.title}</p><div className="chip-row">{row.student.skills.slice(0,5).map((skill) => <span className="feature-chip" key={skill}>{skill}</span>)}</div><p><strong>Availability:</strong> {row.student.availableDays.join(", ")} · {row.student.weeklyHours} hrs/week</p><p><strong>Evidence:</strong> {row.student.experiences.length} experience items · {row.student.verifiedServiceHours} verified hours</p><div className="card-actions"><button className="button" onClick={() => setSelectedCandidate({ student: row.student, opportunity: row.opportunity })}>View safe profile</button>{row.interestId && <button className="button secondary" onClick={() => requestIntroduction(row.interestId!)}>Request controlled introduction</button>}</div></article>)}</div> : <div className="empty-state"><h2>No candidates above 70%.</h2><p>Publish a complete opportunity or improve its skills, schedule, eligibility, and supervision fields.</p></div>}
+          <WeeklyTalentBrief
+            candidates={candidateRows}
+            organizationName={organization.name}
+            organizationEmail={organization.email}
+          />
+          {candidateRows.length ? (
+            <div className="candidate-grid">
+              {candidateRows.map((row) => (
+                <CandidateMatchCard
+                  key={`${row.student.id}-${row.opportunity.id}`}
+                  student={row.student}
+                  opportunity={row.opportunity}
+                  interested={row.interested}
+                  onView={() =>
+                    setSelectedCandidate({
+                      student: row.student,
+                      opportunity: row.opportunity,
+                    })
+                  }
+                  onRequestIntroduction={
+                    row.interestId
+                      ? () => requestIntroduction(row.interestId!)
+                      : undefined
+                  }
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <h2>No candidates above 70%.</h2>
+              <p>
+                Publish a complete opportunity or improve its skills,
+                schedule, eligibility, and supervision fields.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -226,8 +263,8 @@ export function OrganizationApp() {
         <div className="dashboard-stack"><header className="app-page-header"><div><span className="kicker">Organization trust profile</span><h1>Disclose what youth and guardians need to know.</h1><p>A badge alone is not safety. Clear supervision, privacy, accommodations, and contacts improve trust.</p></div><button className="button" onClick={() => { updateOrganization(orgDraft); setNotice("Organization profile saved in this browser demo."); }}>Save profile</button></header><section className="panel-card profile-form"><div className="form-grid two"><label>Name<input value={orgDraft.name} onChange={(e) => setOrgDraft({ ...orgDraft, name: e.target.value })} /></label><label>Website<input value={orgDraft.website} onChange={(e) => setOrgDraft({ ...orgDraft, website: e.target.value })} /></label><label>Email<input value={orgDraft.email} onChange={(e) => setOrgDraft({ ...orgDraft, email: e.target.value })} /></label><label>Location<input value={orgDraft.location} onChange={(e) => setOrgDraft({ ...orgDraft, location: e.target.value })} /></label><label>Contact name<input value={orgDraft.contactName} onChange={(e) => setOrgDraft({ ...orgDraft, contactName: e.target.value })} /></label><label>Phone / contact process<input value={orgDraft.phone} onChange={(e) => setOrgDraft({ ...orgDraft, phone: e.target.value })} /></label><label className="full-span">Mission<textarea value={orgDraft.mission} onChange={(e) => setOrgDraft({ ...orgDraft, mission: e.target.value })} /></label><label>Programs<textarea value={orgDraft.programs.join(", ")} onChange={(e) => setOrgDraft({ ...orgDraft, programs: splitList(e.target.value) })} /></label><label>Audience<textarea value={orgDraft.audience.join(", ")} onChange={(e) => setOrgDraft({ ...orgDraft, audience: splitList(e.target.value) })} /></label><label>Youth safety<textarea value={orgDraft.youthSafety} onChange={(e) => setOrgDraft({ ...orgDraft, youthSafety: e.target.value })} /></label><label>Privacy standards<textarea value={orgDraft.privacyStandards} onChange={(e) => setOrgDraft({ ...orgDraft, privacyStandards: e.target.value })} /></label><label>Accessibility and accommodations<textarea value={orgDraft.accommodations} onChange={(e) => setOrgDraft({ ...orgDraft, accommodations: e.target.value })} /></label><label className="toggle-label"><input type="checkbox" checked={orgDraft.verified} onChange={(e) => setOrgDraft({ ...orgDraft, verified: e.target.checked })} />Hackathon demo verification badge</label></div><div className="notice warning">The demo badge is fictional. Production verification would require real identity, organization, safeguarding, and human-review processes.</div></section>{notice && <div className="notice">{notice}</div>}</div>
       )}
 
-      {active === "Outreach" && (
-        <div className="dashboard-stack"><header className="app-page-header"><div><span className="kicker">Email-only organization start</span><h1>Start with almost nothing—finish with human-confirmed structure.</h1><p>MYIN reviews one relevant public page or employer-supplied content, respects robots restrictions, and never auto-publishes.</p></div></header><section className="two-panel-grid align-start"><div className="panel-card form-stack"><label>Business or organization name<input value={outreach.businessName} onChange={(e) => setOutreach({ ...outreach, businessName: e.target.value })} /></label><label>Public website<input type="url" value={outreach.website} onChange={(e) => setOutreach({ ...outreach, website: e.target.value })} /></label><label>Email<input type="email" value={outreach.email} onChange={(e) => setOutreach({ ...outreach, email: e.target.value })} /></label><label>Optional supplied content<textarea value={outreach.suppliedContent} onChange={(e) => setOutreach({ ...outreach, suppliedContent: e.target.value })} /></label><button className="button" onClick={researchOutreach} disabled={busy}>{busy ? "Researching one public source…" : "Create review draft"}</button></div><div className="panel-card"><h2>Safety boundary</h2><ul className="check-list"><li>One public URL, not a broad crawler</li><li>Robots restrictions and timeouts respected</li><li>Only public or employer-supplied text</li><li>Missing youth-safety information is surfaced</li><li>Organization edits and confirms before publishing</li></ul></div></section><section className="panel-card"><h2>Review drafts</h2>{state.outreachLeads.length ? state.outreachLeads.map((lead) => <article className="research-row" key={lead.id}><div><h3>{lead.researchDraft?.name || lead.businessName}</h3><p>{lead.researchDraft?.mission || "Mission not found in reviewed content."}</p><small>{lead.website}</small></div><div><span className="confidence-pill medium">{Math.round((lead.researchDraft?.confidence || 0)*100)}% confidence</span><p><strong>Missing:</strong> {lead.researchDraft?.missingFields?.join(", ") || "Human confirmation still required"}</p><button className="button ghost" onClick={() => updateOutreachLead({ ...lead, status: "confirmed" })}>{lead.status === "confirmed" ? "Confirmed draft" : "Confirm review only"}</button></div></article>) : <p className="muted">No outreach drafts yet.</p>}</section>{notice && <div className="notice">{notice}</div>}</div>
+      {active === "Website Research" && (
+        <div className="dashboard-stack"><header className="app-page-header"><div><span className="kicker">AI website research</span><h1>Research one public page, then review every field.</h1><p>MYIN reviews one relevant public page or employer-supplied content, respects robots restrictions, and never auto-publishes.</p></div></header><section className="two-panel-grid align-start"><div className="panel-card form-stack"><label>Business or organization name<input value={outreach.businessName} onChange={(e) => setOutreach({ ...outreach, businessName: e.target.value })} /></label><label>Public website<input type="url" value={outreach.website} onChange={(e) => setOutreach({ ...outreach, website: e.target.value })} /></label><label>Email<input type="email" value={outreach.email} onChange={(e) => setOutreach({ ...outreach, email: e.target.value })} /></label><label>Optional supplied content<textarea value={outreach.suppliedContent} onChange={(e) => setOutreach({ ...outreach, suppliedContent: e.target.value })} /></label><button className="button" onClick={researchOutreach} disabled={busy}>{busy ? "Researching one public source…" : "Create review draft"}</button></div><div className="panel-card"><h2>Safety boundary</h2><ul className="check-list"><li>One public URL, not a broad crawler</li><li>Robots restrictions and timeouts respected</li><li>Only public or employer-supplied text</li><li>Missing youth-safety information is surfaced</li><li>Organization edits and confirms before publishing</li></ul></div></section><section className="panel-card"><h2>Review drafts</h2>{state.outreachLeads.length ? state.outreachLeads.map((lead) => <article className="research-row" key={lead.id}><div><h3>{lead.researchDraft?.name || lead.businessName}</h3><p>{lead.researchDraft?.mission || "Mission not found in reviewed content."}</p><small>{lead.website}</small></div><div><span className="confidence-pill medium">{Math.round((lead.researchDraft?.confidence || 0)*100)}% confidence</span><p><strong>Missing:</strong> {lead.researchDraft?.missingFields?.join(", ") || "Human confirmation still required"}</p><button className="button ghost" onClick={() => updateOutreachLead({ ...lead, status: "confirmed" })}>{lead.status === "confirmed" ? "Confirmed draft" : "Confirm review only"}</button></div></article>) : <p className="muted">No outreach drafts yet.</p>}</section>{notice && <div className="notice">{notice}</div>}</div>
       )}
 
       <Modal open={Boolean(selectedCandidate)} onClose={() => setSelectedCandidate(null)} title="Privacy-safe candidate profile" wide>

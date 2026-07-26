@@ -2,8 +2,10 @@
 
 import type { MatchResult, Opportunity } from "@/lib/types";
 import { daysUntil, formatDate } from "@/lib/utils";
+import { buildStudentOpportunityInsights } from "@/lib/match-insights";
 
 export function OpportunityCard({
+  student,
   opportunity,
   match,
   saved,
@@ -14,6 +16,7 @@ export function OpportunityCard({
   onDismiss,
   onDraftEmail,
 }: {
+  student: import("@/lib/types").StudentProfile;
   opportunity: Opportunity;
   match: MatchResult;
   saved: boolean;
@@ -26,6 +29,11 @@ export function OpportunityCard({
 }) {
   const ethicalCount = Object.values(opportunity.safetySignals).filter(Boolean).length;
   const deadlineDays = daysUntil(opportunity.deadline);
+  const insights = buildStudentOpportunityInsights(
+    student,
+    opportunity,
+    match,
+  );
   return (
     <article className="opportunity-card">
       <div className="opportunity-score" aria-label={`${match.total}% match`}>
@@ -50,6 +58,50 @@ export function OpportunityCard({
           <strong>{match.connectionLens}</strong>
           <span>{match.explanations[0]}</span>
         </div>
+
+        <section className="match-insight-card">
+          <div className="match-insight-heading">
+            <div>
+              <span className="kicker">Transparent match review</span>
+              <h4>Why MYIN matched this opportunity</h4>
+            </div>
+            <span className="match-method-badge">100-point rubric</span>
+          </div>
+
+          <div className="match-insight-grid">
+            <div className="match-insight-panel reasons">
+              <strong>Match reasons</strong>
+              <ul>
+                {insights.reasons.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="match-insight-panel pros">
+              <strong>Pros</strong>
+              <ul>
+                {insights.pros.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="match-insight-panel cons">
+              <strong>Considerations</strong>
+              <ul>
+                {insights.cons.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <p className="microcopy">
+            These are explainable matching signals, not a guarantee, moral
+            judgment, or automated decision.
+          </p>
+        </section>
         <div className="chip-row">
           {opportunity.prayerSpace && <span className="feature-chip">Prayer space</span>}
           {opportunity.prayerBreaks && <span className="feature-chip">Flexible prayer breaks</span>}
