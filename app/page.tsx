@@ -1,6 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { SiteHeader } from "@/components/SiteHeader";
+import { CyclingHeroText } from "@/components/CyclingHeroText";
+import { FloatingImpactBubbles } from "@/components/FloatingImpactBubbles";
 
 const orbitBranches = [
   { label: "Internships", icon: "▣", angle: "-90deg" },
@@ -23,12 +25,9 @@ export default function LandingPage() {
           <div className="network-mosque" aria-hidden="true" />
           <div className="container network-hero-grid">
             <div className="network-copy">
+              <FloatingImpactBubbles />
               <span className="network-eyebrow">Muslim Youth Internship Network</span>
-              <h1>
-                Your Ummah.<br />
-                Your Future.<br />
-                <em>Your Opportunities.</em>
-              </h1>
+              <CyclingHeroText />
               <div className="network-divider"><span>✦</span></div>
               <p>
                 MYIN connects Muslim youth with internships, mentors, volunteer roles,
